@@ -14,10 +14,16 @@ class chunk:
         self.yCentre = yPos * 500 + 250
         self.roads = []
         self.roadsID = []
+        self.stations = []
+        self.stationsID = []
 
-    def addRoad(self, x):
-        self.roads.append(x)
-        self.roadsID.append(x.ID)
+    def addRoad(self, rd):
+        self.roads.append(rd)
+        self.roadsID.append(rd.ID)
+
+    def addStation(self, sta):
+        self.stations.append(sta)
+        self.stationsID.append(sta.ID)
 
 
 class road:
@@ -42,11 +48,12 @@ class road:
 
 class station:
 
-    def __init__(self, x, y, name, ID):
+    def __init__(self, x, y, name, ID, adjStations):
         self.x = x
         self.y = y
         self.name = name
         self.ID = ID
+        self.chunk = (0, 0)
         self.adjStations = []
         self.adjStationsID = []
 
@@ -58,8 +65,8 @@ class station:
         allStations = ""
         for s in self.adjStations:
             allStations += s.name + "; "
-        return self.name + ", " + "(" + str(self.x) + ";" + str(
-            self.y) + ")" + ", " + allStations
+        return self.name + ", " + "" + str(self.x) + ", " + str(
+            self.y) + "" + ", " + allStations
 
     def toStringID(self):
         allStations = ""
@@ -82,7 +89,7 @@ class Line:
         self.stationsID.append(station.ID)
 
     def toString(self):
-        x = self.name + ", " + str(self.speed) + ": \n\n"
+        x = self.name + ", " + str(self.speed) + ": \n"
         for s in self.stations:
             x += s.toString() + "\n"
         return x
@@ -161,19 +168,44 @@ def loadRoads(chunks1):
         count += 1
     return roads
 
+def loadLines(chunks4):
+    file = open('fullLines.txt')
+    csvreader = csv.reader(file)
+    IDindex = 0
+    Lineindex = 0
+    lines_load = []
+    stations_load = []
+    for row in csvreader:
+        if row[0] == "":
+            next(csvreader)
+            lines_load.append(row[0], Lineindex, float(row[1]))
+            Lineindex += 1
+        else:
+            sta = station(int(row[1]), int(row[2]), row[0], IDindex, [])
+            stations_load.append(sta)
+            lines_load[Lineindex - 1].addStation(sta)
+            IDindex += 1
+    return lines_load, stations_load
+
+
 
 def loadStations(chunks2):
     file = open('actual.csv')
     csvreader = csv.reader(file)
-    count = 0
+    IDindex = 0
     stations = []
     for row in csvreader:
         x = int(float(row[7].strip()))
         y = int(float(row[8].strip()))
         name = row[0].strip()
         if x > 0 and y > 0 and x < 30000 and y < 30000:
-            stations.append(station(x, y, name, count))
-        count += 1
+            station1 = station(x, y, name, IDindex, [])
+            stations.append(station1)
+            xc = int((x - 1) / 500)
+            yc = int((y - 1) / 500)
+            chunks2[yc][xc].addStation(station1)
+            station1.chunk = (xc, yc)
+        IDindex += 1
     return stations
 
 
@@ -195,7 +227,7 @@ def loadTubeStations(chunks3, lines, stations):
                                     s2.addAdjSta(s)
     file.close()
     for l in lines:
-        print(l.toStringID())
+        print(l.toString())
     print("done")
 
 
@@ -206,13 +238,14 @@ if __name__ == '__main__':
         for j in range(60):
             newChunk = chunk(j, i)
             chunks[i].append(newChunk)
-    roads = loadRoads(chunks)
-    stations = loadStations(chunks)
-    lines = [Line("Bakerloo", 0, 27.04), Line("Central", 1, 37.27), Line("Circle", 2, 23.73),
-             Line("District", 3, 29.19), Line("Hammersmith and City", 4, 25.33), Line("Jubilee", 5, 39.11),
-             Line("Metropolitan", 6, 45.61), Line("Northern", 7, 33.28), Line("Piccadilly", 8, 33.11),
-             Line("Victoria", 9, 40.66)]
-    loadTubeStations(chunks, lines, stations)
+    #roads = loadRoads(chunks)
+    lines, stations = loadLines(chunks)
+    # stations = loadStations(chunks)
+    # lines = [Line("Bakerloo", 0, 27.04), Line("Central", 1, 37.27), Line("Circle", 2, 23.73),
+    #          Line("District", 3, 29.19), Line("Hammersmith and City", 4, 25.33), Line("Jubilee", 5, 39.11),
+    #          Line("Metropolitan", 6, 45.61), Line("Northern", 7, 33.28), Line("Piccadilly", 8, 33.11),
+    #          Line("Victoria", 9, 40.66)]
+    # loadTubeStations(chunks, lines, stations)
 
     # f = open("LineOutput.txt", "a")
     # for l in lines:
