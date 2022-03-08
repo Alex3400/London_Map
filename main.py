@@ -152,7 +152,7 @@ def loadtube(chunks):
         elif nextLine:
             colour = (int(row[2]), int(row[3]), int(row[4]))
             print(colour)
-            lines_load.append(Line(row[0], Lineindex, float(row[1][1:5]), colour))
+            lines_load.append(Line(row[0], Lineindex, float(row[1][1:5])/3.6, colour))
             Lineindex += 1
             nextLine = False
         else:
@@ -341,7 +341,7 @@ if __name__ == '__main__':
     loadedChunks = []
     x, y = 6500, 10000
     x2, y2 = 7000, 10000
-    walkingSpeed = 1.5
+    walkingSpeed = 1.5 # m/s
 
     chunks = []
     for i in range(60):
@@ -356,7 +356,7 @@ if __name__ == '__main__':
     update = True
     running = True
     updatePath = True
-    draw = False
+    draw = -1
     screen = pg.display.set_mode((width, height), pg.RESIZABLE)
     myfont2 = pygame.font.SysFont('Comic Sans MS', int(30 / scale))
     while running:
@@ -378,13 +378,23 @@ if __name__ == '__main__':
         if updatePath: #update path between x,y and all other stations
             pathToStations = []
             for s in stations:
-                pathToStations.append(calc_path2(stations, lines, walkingSpeed, x, y, s.x, s.y))
+                time2, path2 = calc_path2(stations, lines, walkingSpeed, x, y, s.x, s.y)
+                newPath2 = []
+                for ex2, why2 in path2:
+                    newPath2.append(((ex2 - camX) / scale, (why2 - camY) / scale))
+                pathToStations.append((time2, newPath2))
             updatePath = False
 
 
 
 
         (width, height) = (1500 * scale, 700 * scale)
+        if draw != -1:
+            pg.draw.lines(screen, (0, 255, 0), False, pathToStations[draw][1], 5)
+            ti.sleep(0.01)
+            draw += 1
+            if draw == 180:
+                draw = -1
         pg.display.flip()
         screen.fill((240, 240, 240))
         textsurface = myfont2.render((str(int((time * 100)) / 100)), False, (0, 0, 0))
@@ -463,7 +473,7 @@ if __name__ == '__main__':
                 if pressed_keys[pg.K_c]:
                     updatePath = True
                 if pressed_keys[pg.K_d]:
-                    draw = True
+                    draw = 0
             if event.type == pg.QUIT:
                 running = False
             if event.type == pg.MOUSEBUTTONUP:
