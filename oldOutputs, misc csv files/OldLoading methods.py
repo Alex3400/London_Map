@@ -33,7 +33,7 @@ def loadAll():
 
 
 def loadRoads(chunks1):
-    file = open('roadsOutput7.txt')
+    file = open('roadData.txt')
     csvreader = csv.reader(file)
     roads = []
     count = 0
@@ -156,6 +156,26 @@ def loadTubeStations(chunks3, lines, stations):
                                 if s.ID not in s2.adjStationsID:
                                     s2.addAdjSta(s)
     file.close()
+
+
+#old path finding method
+    def path_to_station(ID1, ID2, stations, path, prev):
+        prev.append(ID1)
+        paths = []
+        isDead = False
+        if ID1 > len(stations) - 1:
+            return "dead"
+        for ID in stations[ID1].adjStationsID:
+            if ID not in prev:
+                if ID == ID2:
+                    path.append((stations[ID].x, stations[ID].y))
+                    return path
+                else:
+                    result = path_to_station(ID, ID2, stations, path, prev)
+                    if result != 'dead':
+                        path.append((stations[ID].x, stations[ID].y))
+                        return path
+        return "dead"
     # for l in lines:
     #     print(l.toString())
     # for s in stations:
@@ -185,7 +205,7 @@ def loadTubeStations(chunks3, lines, stations):
 #         f.write(str(station.x) + "," + str(station.y) + "," + station.name + "\n")
 # f.close()
 
-# f = open("roadsOutput7.txt", "a")
+# f = open("roadData.txt", "a")
 # for road in roads:
 #     result = ""
 #     for x, y in road.coordinates:
