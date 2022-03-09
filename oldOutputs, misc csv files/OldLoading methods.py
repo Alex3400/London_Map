@@ -176,6 +176,56 @@ def loadTubeStations(chunks3, lines, stations):
                         path.append((stations[ID].x, stations[ID].y))
                         return path
         return "dead"
+
+# old directions method
+def calc_path(stations, lines, speed, x1, y1, x2, y2):
+    path = [(x1, y1)]
+    dist = calc_dist(x1, y1, x2, y2)
+    walking = dist / speed  # walking straight
+    closest = 100000
+    closest_station = -1
+    for s in stations:
+        dist2 = calc_dist(x1, y1, s.x, s.y)
+        if dist2 < closest:
+            closest = dist2
+            closest_station = s
+    time_to_station = closest / speed
+    mintime = walking
+    dest_station = closest_station
+    ID = closest_station.ID
+    path_best = []
+    for s1 in stations:
+        ID1 = s1.ID
+        dist_to_dest = calc_dist(x2, y2, s1.x, s1.y)
+        # path_s = path_to_station(ID, ID1, stations, [], [])
+        path_s2 = A_star(ID, ID1, stations)
+        path_s = []
+        for s in path_s2:
+            path_s.append((stations[s].x, stations[s].y))
+        path_s.append((stations[ID].x, stations[ID].y))
+        path_s.reverse()
+        path_length = 0
+        # print(path_s)
+        for i in range(1, len(path_s)):
+            one = path_s[i - 1]
+            two = path_s[i]
+            path_length += calc_dist(one[0], one[1], two[0], two[1])
+            # path_length += ((one[0] - two[0]) ** 2 + (one[1] - two[1]) ** 2) ** 0.5
+        time_on_train = path_length / 2000
+        time_to_dest = dist_to_dest / speed
+        if time_on_train + time_to_dest + time_to_station < mintime:
+            mintime = time_on_train + time_to_dest + time_to_station
+            dest_station = s1
+            path_best = path_s
+    if path_best:
+        for l in path_best:
+            path.append(l)
+    path.append((x2, y2))
+    if mintime < walking:
+        # path = [(x1, y1), (closest_station.x, closest_station.y), (dest_station.x, dest_station.y), (x2, y2)]
+        return mintime, path
+    else:
+        return walking, path
     # for l in lines:
     #     print(l.toString())
     # for s in stations:

@@ -152,7 +152,7 @@ def loadtube(chunks):
         elif nextLine:
             colour = (int(row[2]), int(row[3]), int(row[4]))
             print(colour)
-            lines_load.append(Line(row[0], Lineindex, float(row[1][1:5])/3.6, colour))
+            lines_load.append(Line(row[0], Lineindex, float(row[1][1:5]) / 3.6, colour))
             Lineindex += 1
             nextLine = False
         else:
@@ -229,7 +229,7 @@ def calc_dist(x1, y1, x2, y2):
     return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
 
-def calc_path2(stations, lines, speed, x1, y1, x2, y2):
+def calc_path(stations, lines, speed, x1, y1, x2, y2):
     walking = calc_dist(x1, y1, x2, y2) / speed
     threeClosest_x1 = [stations[0], stations[1], stations[2]]
     threeClosest_x2 = [stations[0], stations[1], stations[2]]
@@ -255,18 +255,19 @@ def calc_path2(stations, lines, speed, x1, y1, x2, y2):
             tubePath_ID.reverse()
             path_length = 0
             tube_path_time = 0
-            for i in range(len(tubePath_ID)-1):
+            for i in range(len(tubePath_ID) - 1):
                 superTentativePath.append((stations[tubePath_ID[i]].x, stations[tubePath_ID[i]].y))
-                length = calc_dist(stations[tubePath_ID[i]].x, stations[tubePath_ID[i]].y, stations[tubePath_ID[i+1]].x, stations[tubePath_ID[i+1]].y)
+                length = calc_dist(stations[tubePath_ID[i]].x, stations[tubePath_ID[i]].y,
+                                   stations[tubePath_ID[i + 1]].x, stations[tubePath_ID[i + 1]].y)
                 optimistic_speed = 0
                 for line_one in stations[tubePath_ID[i]].Lines:
-                    for line_two in stations[tubePath_ID[i+1]].Lines:
+                    for line_two in stations[tubePath_ID[i + 1]].Lines:
                         if line_one == line_two:
                             optimistic_speed = max(optimistic_speed, lines[line_one].speed)
                 # if optimistic_speed == 0:
                 #     print(stations[i].name + ' ' + stations[i+1].name)
 
-                tube_path_time += length/optimistic_speed
+                tube_path_time += length / optimistic_speed
                 path_length += length
             walking_to_dest = calc_dist(endStation.x, endStation.y, x2, y2) / speed
             superTentativePath.append((endStation.x, endStation.y))
@@ -280,56 +281,6 @@ def calc_path2(stations, lines, speed, x1, y1, x2, y2):
         return tentativeTime, tentativePath
     else:
         return walking, [(x1, y1), (x2, y2)]
-                
-
-def calc_path(stations, lines, speed, x1, y1, x2, y2):
-    path = [(x1, y1)]
-    dist = calc_dist(x1, y1, x2, y2)
-    walking = dist / speed  # walking straight
-    closest = 100000
-    closest_station = -1
-    for s in stations:
-        dist2 = calc_dist(x1, y1, s.x, s.y)
-        if dist2 < closest:
-            closest = dist2
-            closest_station = s
-    time_to_station = closest / speed
-    mintime = walking
-    dest_station = closest_station
-    ID = closest_station.ID
-    path_best = []
-    for s1 in stations:
-        ID1 = s1.ID
-        dist_to_dest = calc_dist(x2, y2, s1.x, s1.y)
-        # path_s = path_to_station(ID, ID1, stations, [], [])
-        path_s2 = A_star(ID, ID1, stations)
-        path_s = []
-        for s in path_s2:
-            path_s.append((stations[s].x, stations[s].y))
-        path_s.append((stations[ID].x, stations[ID].y))
-        path_s.reverse()
-        path_length = 0
-        # print(path_s)
-        for i in range(1, len(path_s)):
-            one = path_s[i - 1]
-            two = path_s[i]
-            path_length += calc_dist(one[0], one[1], two[0], two[1])
-            # path_length += ((one[0] - two[0]) ** 2 + (one[1] - two[1]) ** 2) ** 0.5
-        time_on_train = path_length / 2000
-        time_to_dest = dist_to_dest / speed
-        if time_on_train + time_to_dest + time_to_station < mintime:
-            mintime = time_on_train + time_to_dest + time_to_station
-            dest_station = s1
-            path_best = path_s
-    if path_best:
-        for l in path_best:
-            path.append(l)
-    path.append((x2, y2))
-    if mintime < walking:
-        # path = [(x1, y1), (closest_station.x, closest_station.y), (dest_station.x, dest_station.y), (x2, y2)]
-        return mintime, path
-    else:
-        return walking, path
 
 
 if __name__ == '__main__':
@@ -341,7 +292,7 @@ if __name__ == '__main__':
     loadedChunks = []
     x, y = 6500, 10000
     x2, y2 = 7000, 10000
-    walkingSpeed = 1.5 # m/s
+    walkingSpeed = 1.5  # m/s
 
     chunks = []
     for i in range(60):
@@ -358,35 +309,53 @@ if __name__ == '__main__':
     updatePath = True
     draw = -1
     screen = pg.display.set_mode((width, height), pg.RESIZABLE)
-    myfont2 = pygame.font.SysFont('Comic Sans MS', int(30 / scale))
+    myfont2 = pygame.font.SysFont('Comic Sans MS', int(30))
     while running:
-        pg.draw.circle(screen, (0, 0, 255), ((x - camX) / scale, (y - camY) / scale), 5)
-        pg.draw.circle(screen, (255, 0, 0), ((x - camX) / scale, (y - camY) / scale), 3)
 
-        pg.draw.circle(screen, (0, 255, 0), ((x2 - camX) / scale, (y2 - camY) / scale), 5)
-        pg.draw.circle(screen, (0, 0, 255), ((x2 - camX) / scale, (y2 - camY) / scale), 3)
+        # calculating path from 1 to 2
 
-        #calculating path from x1 to x2
-        time, path = calc_path2(stations, lines, walkingSpeed, x, y, x2, y2)
-        newPath = []
-        for ex, why in path:
-            newPath.append(((ex - camX) / scale, (why - camY) / scale))
-        pg.draw.lines(screen, (0, 0, 0), False, newPath, 10)
-        if update: #update font size
-            myfont2 = pygame.font.SysFont('Comic Sans MS', int(30 / scale))
-            update = False
-        if updatePath: #update path between x,y and all other stations
+        # calculating path from 1 to all other stations
+        if updatePath:
             pathToStations = []
             for s in stations:
-                time2, path2 = calc_path2(stations, lines, walkingSpeed, x, y, s.x, s.y)
+                time2, path2 = calc_path(stations, lines, walkingSpeed, x, y, s.x, s.y)
                 newPath2 = []
                 for ex2, why2 in path2:
                     newPath2.append(((ex2 - camX) / scale, (why2 - camY) / scale))
                 pathToStations.append((time2, newPath2))
             updatePath = False
 
+        # drawing distance circles
+        for i in range(3, 0, -1):
+            for s in stations:
+                match i:
+                    case 3:
+                        colour = (150, 0, 0)
+                    case 2:
+                        colour = (150, 150, 0)
+                    case 1:
+                        colour = (0, 150, 0)
 
+                timeTo = pathToStations[s.ID][0]
+                if 1000 * i - timeTo > 0:
+                    pg.draw.circle(screen, colour, ((s.x - camX) / scale, (s.y - camY) / scale),
+                                   (1000 * i - timeTo) * walkingSpeed / scale)
+            pg.draw.circle(screen, colour, ((x - camX) / scale, (y - camY) / scale), 1000 * i * walkingSpeed / scale)
 
+        time, path = calc_path(stations, lines, walkingSpeed, x, y, x2, y2)
+        newPath = []
+        for ex, why in path:
+            newPath.append(((ex - camX) / scale, (why - camY) / scale))
+        pg.draw.lines(screen, (0, 0, 0), False, newPath, 10)
+        if update:  # update font size
+            myfont2 = pygame.font.SysFont('Comic Sans MS', int(30/scale))
+            update = False
+        # drawing points 1 and 2
+        pg.draw.circle(screen, (0, 0, 255), ((x - camX) / scale, (y - camY) / scale), 5)
+        pg.draw.circle(screen, (255, 0, 0), ((x - camX) / scale, (y - camY) / scale), 3)
+
+        pg.draw.circle(screen, (0, 255, 0), ((x2 - camX) / scale, (y2 - camY) / scale), 5)
+        pg.draw.circle(screen, (0, 0, 255), ((x2 - camX) / scale, (y2 - camY) / scale), 3)
 
         (width, height) = (1500 * scale, 700 * scale)
         if draw != -1:
@@ -395,10 +364,7 @@ if __name__ == '__main__':
             draw += 1
             if draw == 180:
                 draw = -1
-        pg.display.flip()
-        screen.fill((240, 240, 240))
-        textsurface = myfont2.render((str(int((time * 100)) / 100)), False, (0, 0, 0))
-        screen.blit(textsurface, ((x2 - camX) / scale, (y2 - camY) / scale))
+
         # drawing roads
         for cx, cy in loadedChunks:
             for ID in chunks[cy][cx].roadsID:
@@ -408,7 +374,7 @@ if __name__ == '__main__':
                         xrc = (xrc - camX) / scale
                         yrc = (yrc - camY) / scale
                         newCoords.append((xrc, yrc))
-                    if roads[ID].length > scale * 7.5:
+                    if roads[ID].length > scale * 6:
                         pg.draw.lines(screen, (0, 0, 0), False, newCoords, 2)
                 else:
                     for (xrc, yrc) in roads[ID].coordinates:
@@ -423,7 +389,8 @@ if __name__ == '__main__':
                 pg.draw.circle(screen, (0, 255, 0),
                                ((station.x - camX) / scale, (station.y - camY) / scale), 5)
                 if text:
-                    textsurface2 = myfont2.render(str(station.name) + " " + str(int(pathToStations[station.ID][0])), False, (255, 0, 0))
+                    textsurface2 = myfont2.render(str(station.name) + " " + str(int(pathToStations[station.ID][0])),
+                                                  False, (255, 0, 0))
                     screen.blit(textsurface2, ((station.x - camX) / scale, (station.y - camY) / scale))
                 # for l in lines:
                 #     for s in l.stations:
@@ -439,8 +406,6 @@ if __name__ == '__main__':
                                      ((stations[adjID].x + 3 * i - camX) / scale,
                                       (stations[adjID].y + 3 * i - camY) / scale), int(6 / len(connectingLines) ** 0.3))
 
-
-
         # setting loaded chunks
         loadedChunks = []
         for i in range(60):
@@ -452,6 +417,10 @@ if __name__ == '__main__':
                     if (chunk.xPos, chunk.yPos) not in loadedChunks:
                         loadedChunks.append((chunk.xPos, chunk.yPos))
 
+        pg.display.flip()
+        screen.fill((240, 240, 240))
+        textsurface = myfont2.render((str(int((time * 100)) / 100)), False, (0, 0, 0))
+        screen.blit(textsurface, ((x2 - camX) / scale, (y2 - camY) / scale))
         for event in pg.event.get():
             buttons = pg.mouse.get_pressed(3)
             xm, ym = pg.mouse.get_pos()
@@ -462,11 +431,11 @@ if __name__ == '__main__':
                 if pressed_keys[pg.K_1]:
                     x = xm * scale + camX
                     y = ym * scale + camY
-                    #updatePath = True
+                    # updatePath = True
                 if pressed_keys[pg.K_2]:
                     x2 = xm * scale + camX
                     y2 = ym * scale + camY
-                    #updatePath = True
+                    # updatePath = True
                 if pressed_keys[pg.K_r]:
                     scale = 1
                     update = True
