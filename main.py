@@ -224,7 +224,6 @@ def A_star(ID1, ID2, staitons):
                 if stations[neighborID] not in openSet:
                     openSet.append(stations[neighborID])
 
-
 def calc_dist(x1, y1, x2, y2):
     return ((x2 - x1) ** 2 + (y2 - y1) ** 2) ** 0.5
 
@@ -255,19 +254,24 @@ def calc_path(stations, lines, speed, x1, y1, x2, y2):
             tubePath_ID.reverse()
             path_length = 0
             tube_path_time = 0
+            prev_lines = [10]
             for i in range(len(tubePath_ID) - 1):
                 superTentativePath.append((stations[tubePath_ID[i]].x, stations[tubePath_ID[i]].y))
                 length = calc_dist(stations[tubePath_ID[i]].x, stations[tubePath_ID[i]].y,
                                    stations[tubePath_ID[i + 1]].x, stations[tubePath_ID[i + 1]].y)
                 optimistic_speed = 0
+                current_lines = []
                 for line_one in stations[tubePath_ID[i]].Lines:
                     for line_two in stations[tubePath_ID[i + 1]].Lines:
                         if line_one == line_two:
+                            current_lines.append(line_one)
                             optimistic_speed = max(optimistic_speed, lines[line_one].speed)
-                # if optimistic_speed == 0:
-                #     print(stations[i].name + ' ' + stations[i+1].name)
-
-                tube_path_time += length / optimistic_speed
+                for line in current_lines:
+                    if line not in prev_lines:
+                        tube_path_time += 120
+                        break
+                prev_lines = current_lines
+                tube_path_time += length / optimistic_speed + 30
                 path_length += length
             walking_to_dest = calc_dist(endStation.x, endStation.y, x2, y2) / speed
             superTentativePath.append((endStation.x, endStation.y))
@@ -301,7 +305,7 @@ if __name__ == '__main__':
             newChunk = chunk(j, i)
             chunks[i].append(newChunk)
     stations, lines = loadtube(chunks)
-    #roads = loadRoads(chunks)
+    roads = loadRoads(chunks)
     pg.init()
 
     update = True
@@ -337,10 +341,10 @@ if __name__ == '__main__':
                         colour = (0, 150, 0)
 
                 timeTo = pathToStations[s.ID][0]
-                if 1000 * i - timeTo > 0:
+                if 1800 * i - timeTo > 0:
                     pg.draw.circle(screen, colour, ((s.x - camX) / scale, (s.y - camY) / scale),
-                                   (1000 * i - timeTo) * walkingSpeed / scale)
-            pg.draw.circle(screen, colour, ((x - camX) / scale, (y - camY) / scale), 1000 * i * walkingSpeed / scale)
+                                   (1800 * i - timeTo) * walkingSpeed / scale)
+            pg.draw.circle(screen, colour, ((x - camX) / scale, (y - camY) / scale), 1800 * i * walkingSpeed / scale)
 
         time, path = calc_path(stations, lines, walkingSpeed, x, y, x2, y2)
         newPath = []
@@ -418,7 +422,7 @@ if __name__ == '__main__':
                         loadedChunks.append((chunk.xPos, chunk.yPos))
 
         pg.display.flip()
-        screen.fill((240, 240, 240))
+        screen.fill((60, 0, 0))
         textsurface = myfont2.render((str(int((time * 100)) / 100)), False, (0, 0, 0))
         screen.blit(textsurface, ((x2 - camX) / scale, (y2 - camY) / scale))
         for event in pg.event.get():
@@ -437,6 +441,7 @@ if __name__ == '__main__':
                     y2 = ym * scale + camY
                     # updatePath = True
                 if pressed_keys[pg.K_r]:
+                    camX, camY = (xm * scale + camX - 1500/2, ym * scale + camY - 700/2)
                     scale = 1
                     update = True
                 if pressed_keys[pg.K_c]:
