@@ -289,7 +289,7 @@ def calc_path(stations, lines, speed, x1, y1, x2, y2):
 
 if __name__ == '__main__':
     scale = 1
-    width, height = (1500 * scale, 700 * scale)
+    width, height = (1500, 700)
     camX, camY = (6500, 10000)
     text = True
     prevX, prevY = -1, -1
@@ -305,7 +305,7 @@ if __name__ == '__main__':
             newChunk = chunk(j, i)
             chunks[i].append(newChunk)
     stations, lines = loadtube(chunks)
-    roads = loadRoads(chunks)
+    #roads = loadRoads(chunks)
     pg.init()
 
     update = True
@@ -313,9 +313,15 @@ if __name__ == '__main__':
     updatePath = True
     draw = -1
     screen = pg.display.set_mode((width, height), pg.RESIZABLE)
-    myfont2 = pygame.font.SysFont('Comic Sans MS', int(30))
+    myfont = pygame.font.SysFont('Comic Sans MS', int(30))
+    sideFont = pygame.font.SysFont('Ariel', int(30))
+    count = 0
+    textBoxActive = False
+    input_number = ""
     while running:
-
+        screen.fill((255, 0, 0))
+        width = screen.get_width()
+        height = screen.get_height()
         # calculating path from 1 to 2
 
         # calculating path from 1 to all other stations
@@ -330,21 +336,40 @@ if __name__ == '__main__':
             updatePath = False
 
         # drawing distance circles
-        for i in range(3, 0, -1):
+        # for i in range(3, 0, -1):
+        #     for s in stations:
+        #         match i:
+        #             case 3:
+        #                 colour = (150, 0, 0)
+        #             case 2:
+        #                 colour = (150, 150, 0)
+        #             case 1:
+        #                 colour = (0, 150, 0)
+        #
+        #         timeTo = pathToStations[s.ID][0]
+        #         if 1800 * i - timeTo > 0:
+        #             pg.draw.circle(screen, colour, ((s.x - camX) / scale, (s.y - camY) / scale),
+        #                            (1800 * i - timeTo) * walkingSpeed / scale)
+        #     pg.draw.circle(screen, colour, ((x - camX) / scale, (y - camY) / scale), 1800 * i * walkingSpeed / scale)
+        #
+        maxTime = 7200
+        startColour = (0, 255, 0)
+        endColour = (255, 0, 0)
+        numCircles = 10
+        timeStep = maxTime / numCircles
+        for i in range(numCircles, 0, -1):
+            colour = (startColour[0] + i * (endColour[0] - startColour[0])/numCircles,
+                      startColour[1] + i * (endColour[1] - startColour[1])/numCircles,
+                      startColour[2] + i * (endColour[2] - startColour[2])/numCircles)
+            #colour = (randint(0,255), randint(0,255), randint(0,255))
             for s in stations:
-                match i:
-                    case 3:
-                        colour = (150, 0, 0)
-                    case 2:
-                        colour = (150, 150, 0)
-                    case 1:
-                        colour = (0, 150, 0)
+                if s.chunk in loadedChunks:
+                    timeTo = pathToStations[s.ID][0]
+                    if timeStep * i - timeTo > 0:
+                        pg.draw.circle(screen, colour, ((s.x - camX) / scale, (s.y - camY) / scale),
+                                       (timeStep * i - timeTo) * walkingSpeed / scale)
+            pg.draw.circle(screen, colour, ((x - camX) / scale, (y - camY) / scale), timeStep * i * walkingSpeed / scale)
 
-                timeTo = pathToStations[s.ID][0]
-                if 1800 * i - timeTo > 0:
-                    pg.draw.circle(screen, colour, ((s.x - camX) / scale, (s.y - camY) / scale),
-                                   (1800 * i - timeTo) * walkingSpeed / scale)
-            pg.draw.circle(screen, colour, ((x - camX) / scale, (y - camY) / scale), 1800 * i * walkingSpeed / scale)
 
         time, path = calc_path(stations, lines, walkingSpeed, x, y, x2, y2)
         newPath = []
@@ -352,7 +377,7 @@ if __name__ == '__main__':
             newPath.append(((ex - camX) / scale, (why - camY) / scale))
         pg.draw.lines(screen, (0, 0, 0), False, newPath, 10)
         if update:  # update font size
-            myfont2 = pygame.font.SysFont('Comic Sans MS', int(30/scale))
+            myfont = pygame.font.SysFont('Comic Sans MS', int(30 / scale))
             update = False
         # drawing points 1 and 2
         pg.draw.circle(screen, (0, 0, 255), ((x - camX) / scale, (y - camY) / scale), 5)
@@ -373,18 +398,13 @@ if __name__ == '__main__':
         for cx, cy in loadedChunks:
             for ID in chunks[cy][cx].roadsID:
                 newCoords = []
-                if scale > 2:
-                    for (xrc, yrc) in roads[ID].coordinates:
-                        xrc = (xrc - camX) / scale
-                        yrc = (yrc - camY) / scale
-                        newCoords.append((xrc, yrc))
-                    if roads[ID].length > scale * 6:
-                        pg.draw.lines(screen, (0, 0, 0), False, newCoords, 2)
+                for (xrc, yrc) in roads[ID].coordinates:
+                    xrc = (xrc - camX) / scale
+                    yrc = (yrc - camY) / scale
+                    newCoords.append((xrc, yrc))
+                if roads[ID].length < scale * 12:
+                    pg.draw.lines(screen, (0, 0, 0), False, (newCoords[0], newCoords[len(newCoords)-1]), 2)
                 else:
-                    for (xrc, yrc) in roads[ID].coordinates:
-                        xrc = (xrc - camX) / scale
-                        yrc = (yrc - camY) / scale
-                        newCoords.append((xrc, yrc))
                     pg.draw.lines(screen, (0, 0, 0), False, newCoords, 2)
 
         # drawing stations and lines
@@ -393,8 +413,8 @@ if __name__ == '__main__':
                 pg.draw.circle(screen, (0, 255, 0),
                                ((station.x - camX) / scale, (station.y - camY) / scale), 5)
                 if text:
-                    textsurface2 = myfont2.render(str(station.name) + " " + str(int(pathToStations[station.ID][0])),
-                                                  False, (255, 0, 0))
+                    textsurface2 = myfont.render(str(station.name) + " " + str(int(pathToStations[station.ID][0])),
+                                                 False, (255, 0, 0))
                     screen.blit(textsurface2, ((station.x - camX) / scale, (station.y - camY) / scale))
                 # for l in lines:
                 #     for s in l.stations:
@@ -410,6 +430,10 @@ if __name__ == '__main__':
                                      ((stations[adjID].x + 3 * i - camX) / scale,
                                       (stations[adjID].y + 3 * i - camY) / scale), int(6 / len(connectingLines) ** 0.3))
 
+        # drawing time form x,y to x2,y2
+        textsurface = myfont.render((str(int((time * 100)) / 100)), False, (0, 0, 0))
+        screen.blit(textsurface, ((x2 - camX) / scale, (y2 - camY) / scale))
+
         # setting loaded chunks
         loadedChunks = []
         for i in range(60):
@@ -421,52 +445,80 @@ if __name__ == '__main__':
                     if (chunk.xPos, chunk.yPos) not in loadedChunks:
                         loadedChunks.append((chunk.xPos, chunk.yPos))
 
+
+
+        #side bar things
+        sideRect = pg.Rect(1300, 0, 200, 700)
+        textBox = pg.Rect(1350, 100, 100, 50)
+        pg.draw.rect(screen, (120, 120, 120), sideRect)
+
+        pg.draw.rect(screen, (255, 255, 255), textBox)
+        if textBoxActive:
+            pg.draw.rect(screen, (0, 0, 0), textBox, 3)
+        textBox1Text = sideFont.render(input_number, False, (255, 0, 0))
+        screen.blit(textBox1Text, (1360, 110))
+
         pg.display.flip()
-        screen.fill((60, 0, 0))
-        textsurface = myfont2.render((str(int((time * 100)) / 100)), False, (0, 0, 0))
-        screen.blit(textsurface, ((x2 - camX) / scale, (y2 - camY) / scale))
+
+
+
+
         for event in pg.event.get():
             buttons = pg.mouse.get_pressed(3)
             xm, ym = pg.mouse.get_pos()
             pressed_keys = pygame.key.get_pressed()
-            if event.type == pg.KEYDOWN:
-                if pressed_keys[pg.K_SPACE]:
-                    text = not text
-                if pressed_keys[pg.K_1]:
-                    x = xm * scale + camX
-                    y = ym * scale + camY
-                    # updatePath = True
-                if pressed_keys[pg.K_2]:
-                    x2 = xm * scale + camX
-                    y2 = ym * scale + camY
-                    # updatePath = True
-                if pressed_keys[pg.K_r]:
-                    camX, camY = (xm * scale + camX - 1500/2, ym * scale + camY - 700/2)
-                    scale = 1
-                    update = True
-                if pressed_keys[pg.K_c]:
-                    updatePath = True
-                if pressed_keys[pg.K_d]:
-                    draw = 0
             if event.type == pg.QUIT:
                 running = False
-            if event.type == pg.MOUSEBUTTONUP:
-                prevX = -1
-            if buttons[0]:
-                if not prevX == -1:
-                    camX += (prevX - xm) * scale
-                    camY += (prevY - ym) * scale
-                prevX, prevY = pg.mouse.get_pos()
-            if event.type == pg.MOUSEBUTTONDOWN:
-                if event.button == 5:
-                    scale += 0.5
-                    camX += width * (-0.05) / 2
-                    camY += height * (-0.05) / 2
-                    update = True
-                if event.button == 4:
-                    scale -= 0.05
-                    # camX += width * (scale - 1) / 2
-                    # camY += height * (scale - 1) / 2
-                    update = True
+            if event.type == pg.KEYDOWN:
+                if textBoxActive:
+                    for i in range(46, 58):
+                        if pressed_keys[i]:
+                            input_number += str(i - 48)
+                    if pressed_keys[pg.K_BACKSPACE]:
+                        input_number = input_number[0:len(input_number) - 1]
+            if not sideRect.collidepoint(xm, ym):
+                if event.type == pg.KEYDOWN:
+                    if pressed_keys[pg.K_SPACE]:
+                        text = not text
+                    if pressed_keys[pg.K_1]:
+                        x = xm * scale + camX
+                        y = ym * scale + camY
+                        # updatePath = True
+                    if pressed_keys[pg.K_2]:
+                        x2 = xm * scale + camX
+                        y2 = ym * scale + camY
+                        # updatePath = True
+                    if pressed_keys[pg.K_r]:
+                        camX, camY = (xm * scale + camX - 1500/2, ym * scale + camY - 700/2)
+                        scale = 1
+                        update = True
+                    if pressed_keys[pg.K_c]:
+                        updatePath = True
+                    if pressed_keys[pg.K_d]:
+                        draw = 0
+                if event.type == pg.MOUSEBUTTONUP:
+                    prevX = -1
                 if buttons[0]:
-                    print(str(xm * scale + camX) + ", " + str(ym * scale + camY))
+                    if not prevX == -1:
+                        camX += (prevX - xm) * scale
+                        camY += (prevY - ym) * scale
+                    prevX, prevY = pg.mouse.get_pos()
+                if event.type == pg.MOUSEBUTTONDOWN:
+                    if event.button == 5:
+                        scale += 0.5
+                        camX += width * (-0.05) / 2
+                        camY += height * (-0.05) / 2
+                        update = True
+                    if event.button == 4:
+                        scale -= 0.05
+                        # camX += width * (scale - 1) / 2
+                        # camY += height * (scale - 1) / 2
+                        update = True
+                    if buttons[0]:
+                        print(str(xm * scale + camX) + ", " + str(ym * scale + camY))
+            else:
+                if event.type == pg.MOUSEBUTTONDOWN:
+                    if event.button == 1:
+                        if textBox.collidepoint(xm, ym):
+                            textBoxActive = not textBoxActive
+
