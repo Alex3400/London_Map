@@ -305,7 +305,7 @@ if __name__ == '__main__':
             newChunk = chunk(j, i)
             chunks[i].append(newChunk)
     stations, lines = loadtube(chunks)
-    #roads = loadRoads(chunks)
+    roads = loadRoads(chunks)
     pg.init()
 
     update = True
@@ -315,9 +315,15 @@ if __name__ == '__main__':
     screen = pg.display.set_mode((width, height), pg.RESIZABLE)
     myfont = pygame.font.SysFont('Comic Sans MS', int(30))
     sideFont = pygame.font.SysFont('Ariel', int(30))
+    sideFontSmall = pygame.font.SysFont('Ariel', 20)
     count = 0
     textBoxActive = False
-    input_number = ""
+    tempS, tempN = 0, 0
+    maxTime = 7200
+    startColour = (0, 255, 0)
+    endColour = (255, 0, 0)
+    numCircles = 10
+    timeStep = maxTime / numCircles
     while running:
         screen.fill((255, 0, 0))
         width = screen.get_width()
@@ -352,11 +358,6 @@ if __name__ == '__main__':
         #                            (1800 * i - timeTo) * walkingSpeed / scale)
         #     pg.draw.circle(screen, colour, ((x - camX) / scale, (y - camY) / scale), 1800 * i * walkingSpeed / scale)
         #
-        maxTime = 7200
-        startColour = (0, 255, 0)
-        endColour = (255, 0, 0)
-        numCircles = 10
-        timeStep = maxTime / numCircles
         for i in range(numCircles, 0, -1):
             colour = (startColour[0] + i * (endColour[0] - startColour[0])/numCircles,
                       startColour[1] + i * (endColour[1] - startColour[1])/numCircles,
@@ -449,33 +450,44 @@ if __name__ == '__main__':
 
         #side bar things
         sideRect = pg.Rect(1300, 0, 200, 700)
-        textBox = pg.Rect(1350, 100, 100, 50)
         pg.draw.rect(screen, (120, 120, 120), sideRect)
 
-        pg.draw.rect(screen, (255, 255, 255), textBox)
-        if textBoxActive:
-            pg.draw.rect(screen, (0, 0, 0), textBox, 3)
-        textBox1Text = sideFont.render(input_number, False, (255, 0, 0))
-        screen.blit(textBox1Text, (1360, 110))
+        circleSizeBox = pg.Rect(1350, 100, 85, 30)
+        pg.draw.rect(screen, (255, 255, 255), circleSizeBox)
+        circleSizeText = sideFont.render(str(timeStep + tempS), False, (255, 0, 0))
+        screen.blit(circleSizeText, (1360, 110))
+        screen.blit(sideFontSmall.render("seconds per circle", False, (0,0,255)), (1350, 85))
+        pg.draw.rect(screen, (180, 180, 180), pg.Rect(1415, 100, 20, 30))
+        upArrow1 = pg.Rect(1415, 100, 20, 15)
+        downArrow1 = pg.Rect(1415, 115, 20, 15)
+        pg.draw.rect(screen, (0, 0, 0), upArrow1, 1)
+        pg.draw.rect(screen, (0, 0, 0), downArrow1, 1)
+
+        numCirclesBox = pg.Rect(1350, 175, 85, 30)
+        pg.draw.rect(screen, (255, 255, 255), numCirclesBox)
+        numCirclesText = sideFont.render(str(numCircles + tempN), False, (255, 0, 0))
+        screen.blit(numCirclesText, (1360, 185))
+        screen.blit(sideFontSmall.render("Number of Circles", False, (0, 0, 255)), (1350, 160))
+        pg.draw.rect(screen, (180, 180, 180), pg.Rect(1415, 175, 20, 30))
+        upArrow2 = pg.Rect(1415, 175, 20, 15)
+        downArrow2 = pg.Rect(1415, 190, 20, 15)
+        pg.draw.rect(screen, (0, 0, 0), upArrow2, 1)
+        pg.draw.rect(screen, (0, 0, 0), downArrow2, 1)
+
+
+
+        updateButton = pg.Rect(1325, 625, 150, 50)
+        pg.draw.rect(screen, (80, 80, 80), updateButton)
+        screen.blit(sideFont.render("Update!", False, (255, 255, 255)), (1360, 640))
+
 
         pg.display.flip()
-
-
-
-
         for event in pg.event.get():
             buttons = pg.mouse.get_pressed(3)
             xm, ym = pg.mouse.get_pos()
             pressed_keys = pygame.key.get_pressed()
             if event.type == pg.QUIT:
                 running = False
-            if event.type == pg.KEYDOWN:
-                if textBoxActive:
-                    for i in range(46, 58):
-                        if pressed_keys[i]:
-                            input_number += str(i - 48)
-                    if pressed_keys[pg.K_BACKSPACE]:
-                        input_number = input_number[0:len(input_number) - 1]
             if not sideRect.collidepoint(xm, ym):
                 if event.type == pg.KEYDOWN:
                     if pressed_keys[pg.K_SPACE]:
@@ -519,6 +531,20 @@ if __name__ == '__main__':
             else:
                 if event.type == pg.MOUSEBUTTONDOWN:
                     if event.button == 1:
-                        if textBox.collidepoint(xm, ym):
-                            textBoxActive = not textBoxActive
+                        if upArrow1.collidepoint(xm, ym):
+                            tempS += 10
+                        if downArrow1.collidepoint(xm, ym):
+                            tempS -= 10
+                        if upArrow2.collidepoint(xm, ym):
+                            tempN += 1
+                        if downArrow2.collidepoint(xm, ym):
+                            tempN -= 1
+                        if updateButton.collidepoint(xm, ym):
+                            update = True
+                            updatePath = True
+                            numCircles += tempN
+                            timeStep += tempS
+                            tempS = 0
+                            tempN = 0
+
 
